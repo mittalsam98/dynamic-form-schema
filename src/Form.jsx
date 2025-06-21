@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { InputField, NumberField } from "./components";
+import { InputField, NumberField } from "./Components";
 
 function Form({ formDataProps }) {
   const [formData, setFormData] = useState({});
@@ -28,18 +28,6 @@ function Form({ formDataProps }) {
     setFormData((prev) => ({
       ...prev,
       [field]: formattedValue,
-    }));
-  };
-
-  const handleNestedChange = (e, parent, field) => {
-    const { value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [parent]: {
-        ...prev[parent],
-        [field]: value,
-      },
     }));
   };
 

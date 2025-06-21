@@ -1,5 +1,4 @@
-// context/FormContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from "react";
 
 const FormContext = createContext();
 
@@ -7,7 +6,7 @@ export const FormProvider = ({ children }) => {
   const [formData, setFormData] = useState({});
 
   const updateField = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -18,6 +17,3 @@ export const FormProvider = ({ children }) => {
 };
 
 export const useForm = () => useContext(FormContext);
-
-
-
