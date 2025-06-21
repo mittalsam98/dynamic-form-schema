@@ -1,69 +1,166 @@
 import { useEffect, useState } from "react";
-import { InputField, NumberField } from "./Components";
+import { InputField, NumberField, DateField, SelectField, CheckboxField } from "./Components.jsx";
 
 function Form({ formDataProps }) {
   const [formData, setFormData] = useState({});
   const [schema, setSchema] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     console.log({ formDataProps });
     setSchema(formDataProps);
   }, [formDataProps]);
 
+  const validateField = (value, validation) => {
+    if (!validation) return "";
+    if (validation.required && (!value || value === "")) {
+      return "This field is required";
+    }
+    if (value) {
+      if (validation.minLength && value.length < validation.minLength) {
+        return `Minimum length req. is ${validation.minLength} characters`;
+      }
+      
+      if (validation.maxLength && value.length > validation.maxLength) {
+        return `Maximum length req. is ${validation.maxLength} characters`;
+      }
+      
+      if (validation.min && Number(value) < validation.min) {
+        return `Minimum value is ${validation.min}`;
+      }
+      
+      if (validation.max && Number(value) > validation.max) {
+        return `Maximum value is ${validation.max}`;
+      }
+      
+      if (validation.pattern && !new RegExp(validation.pattern).test(value)) {
+        return "Invalid format";
+      }
+    }
+    return "";
+  };
+
+  const showField = (field, showIf) => {
+    if (!showIf) return true;
+    
+    const formVal = formData[showIf.field];
+    return formVal === showIf.value;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    setSubmitted(true);
+        const newErrors = {};
+    Object.entries(schema.properties).forEach(([key, prop]) => {
+      const error = validateField(formData[key], prop.validation);
+      if (error) newErrors[key] = error;
+    });
+    
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length === 0) {
+      console.log("Fddddd====", formData);
+      setSubmitted(true);
+    }
   };
 
   const handleChange = (e, field, type) => {
-    const { value } = e.target;
-
+    const { value, checked } = e.target;
     let formattedValue = value;
     if (type === "number" && value !== "") {
       formattedValue = Number(value);
+    } else if (type === "checkbox") {
+      formattedValue = checked;
     }
-
     setFormData((prev) => ({
       ...prev,
       [field]: formattedValue,
     }));
+    
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   const renderField = (key, prop, required = []) => {
     console.log({ prop });
-    const isRequired = required.includes(key);
-
+    const isRequired = required.includes(key) || prop.validation?.required;
+    const error = errors[key];
+    if (!showField(key, prop.showIf)) {
+      return null;
+    }
     if (prop.type === "string") {
       return (
-        <InputField
-          key={key}
-          keyName={key}
-          label={prop.label}
-          value={formData[key] || ""}
-          onChange={(e) => handleChange(e, key, "string")}
-          required={isRequired}
-        />
+        <div key={key}>
+          <InputField
+            keyName={key}
+            label={prop.label}
+            value={formData[key] || ""}
+            onChange={(e) => handleChange(e, key, "string")}
+            required={isRequired}
+          />
+          {error && <div style={{ color: "red", fontSize: "12px", marginLeft: "100px" }}>{error}</div>}
+        </div>
       );
     } else if (prop.type === "number") {
       return (
-        <NumberField
-          key={key}
-          keyName={key}
-          label={prop.label}
-          value={formData[key] || ""}
-          onChange={(e) => handleChange(e, key, "number")}
-          required={isRequired}
-        />
+        <div key={key}>
+          <NumberField
+            keyName={key}
+            label={prop.label}
+            value={formData[key] || ""}
+            onChange={(e) => handleChange(e, key, "number")}
+            required={isRequired}
+          />
+          {error && <div style={{ color: "red", fontSize: "12px", marginLeft: "100px" }}>{error}</div>}
+        </div>
       );
-    } else if (prop.type === "object") {
+    } else if (prop.type === "date") {
+      return (
+        <div key={key}>
+          <DateField
+            keyName={key}
+            label={prop.label}
+            value={formData[key] || ""}
+            onChange={(e) => handleChange(e, key, "date")}
+            required={isRequired}
+          />
+          {error && <div style={{ color: "red", fontSize: "12px", marginLeft: "100px" }}>{error}</div>}
+        </div>
+      );
+    } else if (prop.type === "select") {
+      return (
+        <div key={key}>
+          <SelectField
+            keyName={key}
+            label={prop.label}
+            value={formData[key] || ""}
+            onChange={(e) => handleChange(e, key, "select")}
+            required={isRequired}
+            options={prop.options}
+          />
+          {error && <div style={{ color: "red", fontSize: "12px", marginLeft: "100px" }}>{error}</div>}
+        </div>
+      );
+    } else if (prop.type === "checkbox") {
+      return (
+        <div key={key}>
+          <CheckboxField
+            keyName={key}
+            label={prop.label}
+            value={formData[key] || false}
+            onChange={(e) => handleChange(e, key, "checkbox")}
+            required={isRequired}
+          />
+          {error && <div style={{ color: "red", fontSize: "12px", marginLeft: "100px" }}>{error}</div>}
+        </div>
+      );
+    }  else if (prop.type === "object") {
       return (
         <div key={key} className="mt-5">
           <div className="bg-slate-200 px-2 text-md">{prop.name}</div>
           {Object.entries(prop.properties).map(([childKey, childProp]) => {
-            const isChildRequired = prop.required?.includes(childKey);
-
+            const isChildRequired = prop.required?.includes(childKey) || childProp.validation?.required;
             return renderField(childKey, childProp, prop.required || [])
           })}
         </div>
